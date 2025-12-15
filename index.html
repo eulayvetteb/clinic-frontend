@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Clinic System</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <h1>Clinic System</h1>
+
+  <section>
+    <h2>Add Patient</h2>
+    <form id="patientForm">
+      <input type="text" id="name" placeholder="Name" required />
+      <input type="text" id="phone" placeholder="Phone" required />
+      <input type="email" id="email" placeholder="Email" required />
+      <input type="date" id="birthDate" required />
+      <button type="submit">Add Patient</button>
+    </form>
+  </section>
+
+  <section>
+    <h2>Patients</h2>
+    <ul id="patientList"></ul>
+  </section>
+
+  <script src="app.js"></script>
+</body>
+</html>
