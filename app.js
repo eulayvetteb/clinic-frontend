@@ -1,302 +1,104 @@
-// ================== CONFIG ==================
-const API_BASE = "https://crud-clinic.onrender.com/api"; // ✅ change if needed
+const API = "https://crud-clinic.onrender.com/api";
 
-// ================== HELPERS ==================
-async function api(path, options = {}) {
-  const res = await fetch(`${API_BASE}${path}`, {
-    headers: { "Content-Type": "application/json", ...(options.headers || {}) },
-    ...options,
-  });
+// tabs
+document.querySelectorAll(".tab").forEach(tab=>{
+  tab.onclick = ()=>{
+    document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));
+    tab.classList.add("active");
 
-  let data = null;
-  try {
-    data = await res.json();
-  } catch (e) {
-    // if backend returns no JSON
-  }
-
-  if (!res.ok) {
-    const msg =
-      data?.message ||
-      data?.error ||
-      `Request failed (${res.status}) on ${path}`;
-    throw new Error(msg);
-  }
-
-  return data;
-}
-
-function escapeHtml(s = "") {
-  return String(s)
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#039;");
-}
-
-function showError(err) {
-  const msg = err?.message || String(err);
-  // nicer later (toast), for now alert:
-  alert(msg);
-}
-
-// ================== TABS ==================
-const tabs = document.querySelectorAll(".tab");
-const panels = document.querySelectorAll(".panel");
-
-tabs.forEach((btn) => {
-  btn.addEventListener("click", () => {
-    tabs.forEach((t) => t.classList.remove("active"));
-    btn.classList.add("active");
-
-    const target = btn.dataset.tab;
-    panels.forEach((p) => (p.hidden = p.id !== target));
-  });
-});
-
-// ================== ELEMENTS ==================
-// Forms
-const patientForm = document.getElementById("patientForm");
-const doctorForm = document.getElementById("doctorForm");
-const appointmentForm = document.getElementById("appointmentForm");
-
-// Tables
-const patientsTbody = document.getElementById("patientsTbody");
-const doctorsTbody = document.getElementById("doctorsTbody");
-const appointmentsTbody = document.getElementById("appointmentsTbody");
-
-// Appointment selects
-const apptPatientSelect = document.getElementById("apptPatient");
-const apptDoctorSelect = document.getElementById("apptDoctor");
-
-// ================== STATE ==================
-let patientsCache = [];
-let doctorsCache = [];
-
-// ================== RENDERERS ==================
-function renderPatientsTable(list) {
-  if (!patientsTbody) return;
-  patientsTbody.innerHTML = "";
-
-  list.forEach((p) => {
-    const tr = document.createElement("tr");
-    tr.innerHTML = `
-      <td>${escapeHtml(p.name)}</td>
-      <td>${escapeHtml(p.email)}</td>
-      <td>${escapeHtml(p.phone)}</td>
-      <td>${escapeHtml(p.dob || p.date || "")}</td>
-      <td class="actionsCol">
-        <button class="smallBtn danger" data-type="patient" data-id="${p._id}">Delete</button>
-      </td>
-    `;
-    patientsTbody.appendChild(tr);
-  });
-}
-
-function renderDoctorsTable(list) {
-  if (!doctorsTbody) return;
-  doctorsTbody.innerHTML = "";
-
-  list.forEach((d) => {
-    const tr = document.createElement("tr");
-    tr.innerHTML = `
-      <td>${escapeHtml(d.name)}</td>
-      <td>${escapeHtml(d.specialty || d.specialization || "")}</td>
-      <td>${escapeHtml(d.phone || "")}</td>
-      <td class="actionsCol">
-        <button class="smallBtn danger" data-type="doctor" data-id="${d._id}">Delete</button>
-      </td>
-    `;
-    doctorsTbody.appendChild(tr);
-  });
-}
-
-function renderAppointmentsTable(list) {
-  if (!appointmentsTbody) return;
-  appointmentsTbody.innerHTML = "";
-
-  list.forEach((a) => {
-    // backend might return populated patient/doctor objects OR ids
-    const patientName =
-      a.patient?.name ||
-      patientsCache.find((p) => p._id === a.patient)?.name ||
-      "";
-    const doctorName =
-      a.doctor?.name ||
-      doctorsCache.find((d) => d._id === a.doctor)?.name ||
-      "";
-
-    const when = [a.date || "", a.time || ""].filter(Boolean).join(" ");
-
-    const tr = document.createElement("tr");
-    tr.innerHTML = `
-      <td>${escapeHtml(patientName)}</td>
-      <td>${escapeHtml(doctorName)}</td>
-      <td>${escapeHtml(when)}</td>
-      <td>${escapeHtml(a.notes || "")}</td>
-      <td class="actionsCol">
-        <button class="smallBtn danger" data-type="appointment" data-id="${a._id}">Delete</button>
-      </td>
-    `;
-    appointmentsTbody.appendChild(tr);
-  });
-}
-
-function renderAppointmentDropdowns() {
-  if (!apptPatientSelect || !apptDoctorSelect) return;
-
-  apptPatientSelect.innerHTML = `<option value="" disabled selected>Select Patient</option>`;
-  patientsCache.forEach((p) => {
-    const opt = document.createElement("option");
-    opt.value = p._id;
-    opt.textContent = p.name;
-    apptPatientSelect.appendChild(opt);
-  });
-
-  apptDoctorSelect.innerHTML = `<option value="" disabled selected>Select Doctor</option>`;
-  doctorsCache.forEach((d) => {
-    const opt = document.createElement("option");
-    opt.value = d._id;
-    opt.textContent = d.name;
-    apptDoctorSelect.appendChild(opt);
-  });
-}
-
-// ================== LOADERS ==================
-async function loadPatients() {
-  const data = await api("/patients");
-  patientsCache = Array.isArray(data) ? data : data?.patients || [];
-  renderPatientsTable(patientsCache);
-  renderAppointmentDropdowns();
-}
-
-async function loadDoctors() {
-  const data = await api("/doctors");
-  doctorsCache = Array.isArray(data) ? data : data?.doctors || [];
-  renderDoctorsTable(doctorsCache);
-  renderAppointmentDropdowns();
-}
-
-async function loadAppointments() {
-  const data = await api("/appointments");
-  const list = Array.isArray(data) ? data : data?.appointments || [];
-  renderAppointmentsTable(list);
-}
-
-// ================== SUBMITS ==================
-patientForm?.addEventListener("submit", async (e) => {
-  e.preventDefault();
-
-  const name = e.target.elements["name"]?.value.trim();
-  const dob = e.target.elements["dob"]?.value; // date input
-  const email = e.target.elements["email"]?.value.trim();
-  const phone = e.target.elements["phone"]?.value.trim();
-
-  try {
-    await api("/patients", {
-      method: "POST",
-      body: JSON.stringify({ name, dob, email, phone }),
+    document.querySelectorAll(".panel").forEach(p=>{
+      p.hidden = p.id !== tab.dataset.tab;
     });
-
-    e.target.reset();
-    await loadPatients();
-  } catch (err) {
-    // handle duplicate email nicely
-    if (String(err.message).includes("E11000") || String(err.message).toLowerCase().includes("duplicate")) {
-      alert("Email already exists. Please use a different email.");
-      return;
-    }
-    showError(err);
-  }
+  };
 });
 
-doctorForm?.addEventListener("submit", async (e) => {
+// helpers
+const $ = id => document.getElementById(id);
+
+// LOADERS
+async function loadPatients(){
+  const res = await fetch(`${API}/patients`);
+  const data = await res.json();
+  $("patientsTbody").innerHTML = data.map(p=>`
+    <tr><td>${p.name}</td><td>${p.email}</td><td>${p.phone}</td><td>${p.dob}</td></tr>
+  `).join("");
+
+  $("apptPatient").innerHTML =
+    `<option disabled selected>Select Patient</option>` +
+    data.map(p=>`<option value="${p._id}">${p.name}</option>`).join("");
+}
+
+async function loadDoctors(){
+  const res = await fetch(`${API}/doctors`);
+  const data = await res.json();
+  $("doctorsTbody").innerHTML = data.map(d=>`
+    <tr><td>${d.name}</td><td>${d.specialty}</td><td>${d.phone}</td></tr>
+  `).join("");
+
+  $("apptDoctor").innerHTML =
+    `<option disabled selected>Select Doctor</option>` +
+    data.map(d=>`<option value="${d._id}">${d.name}</option>`).join("");
+}
+
+async function loadAppointments(){
+  const res = await fetch(`${API}/appointments`);
+  const data = await res.json();
+  $("appointmentsTbody").innerHTML = data.map(a=>`
+    <tr>
+      <td>${a.patient?.name || ""}</td>
+      <td>${a.doctor?.name || ""}</td>
+      <td>${a.date} ${a.time}</td>
+      <td>${a.notes||""}</td>
+    </tr>
+  `).join("");
+}
+
+// SUBMITS
+$("patientForm").onsubmit = async e=>{
   e.preventDefault();
+  const f = e.target;
+  await fetch(`${API}/patients`,{
+    method:"POST",
+    headers:{ "Content-Type":"application/json" },
+    body:JSON.stringify({
+      name:f.name.value, dob:f.dob.value,
+      email:f.email.value, phone:f.phone.value
+    })
+  });
+  f.reset(); loadPatients();
+};
 
-  const name = e.target.elements["name"]?.value.trim();
-  const specialization = e.target.elements["specialization"]?.value.trim();
-  const phone = e.target.elements["phone"]?.value.trim();
-
-  try {
-    // ✅ IMPORTANT: backend expects "specialty"
-    await api("/doctors", {
-      method: "POST",
-      body: JSON.stringify({ name, specialty: specialization, phone }),
-    });
-
-    e.target.reset();
-    await loadDoctors();
-  } catch (err) {
-    showError(err);
-  }
-});
-
-appointmentForm?.addEventListener("submit", async (e) => {
+$("doctorForm").onsubmit = async e=>{
   e.preventDefault();
+  const f = e.target;
+  await fetch(`${API}/doctors`,{
+    method:"POST",
+    headers:{ "Content-Type":"application/json" },
+    body:JSON.stringify({
+      name:f.name.value,
+      specialty:f.specialization.value,
+      phone:f.phone.value
+    })
+  });
+  f.reset(); loadDoctors();
+};
 
-  const patient = e.target.elements["patient"]?.value;
-  const doctor = e.target.elements["doctor"]?.value;
-  const date = e.target.elements["date"]?.value;
-  const time = e.target.elements["time"]?.value;
-  const notes = e.target.elements["notes"]?.value?.trim() || "";
+$("appointmentForm").onsubmit = async e=>{
+  e.preventDefault();
+  const f = e.target;
+  await fetch(`${API}/appointments`,{
+    method:"POST",
+    headers:{ "Content-Type":"application/json" },
+    body:JSON.stringify({
+      patient:f.patient.value,
+      doctor:f.doctor.value,
+      date:f.date.value,
+      time:f.time.value,
+      notes:f.notes.value
+    })
+  });
+  f.reset(); loadAppointments();
+};
 
-  if (!patient || !doctor) {
-    alert("Please select patient and doctor.");
-    return;
-  }
-
-  try {
-    await api("/appointments", {
-      method: "POST",
-      body: JSON.stringify({ patient, doctor, date, time, notes }),
-    });
-
-    e.target.reset();
-    await loadAppointments();
-  } catch (err) {
-    showError(err);
-  }
-});
-
-// ================== DELETE (optional if your backend supports it) ==================
-document.addEventListener("click", async (e) => {
-  const btn = e.target.closest("button[data-type][data-id]");
-  if (!btn) return;
-
-  const type = btn.dataset.type;
-  const id = btn.dataset.id;
-
-  const ok = confirm(`Delete this ${type}?`);
-  if (!ok) return;
-
-  try {
-    if (type === "patient") {
-      await api(`/patients/${id}`, { method: "DELETE" });
-      await loadPatients();
-      await loadAppointments(); // appointments might reference patient
-    }
-    if (type === "doctor") {
-      await api(`/doctors/${id}`, { method: "DELETE" });
-      await loadDoctors();
-      await loadAppointments();
-    }
-    if (type === "appointment") {
-      await api(`/appointments/${id}`, { method: "DELETE" });
-      await loadAppointments();
-    }
-  } catch (err) {
-    showError(err);
-  }
-});
-
-// ================== INIT ==================
-(async function init() {
-  try {
-    await loadPatients();
-    await loadDoctors();
-    await loadAppointments();
-  } catch (err) {
-    showError(err);
-  }
-})();
+// init
+loadPatients(); loadDoctors(); loadAppointments();
