@@ -1,14 +1,14 @@
 <div class="page">
-  <h1 class="title">Clinic Management System</h1>
+  <h1 class="title">Clinic Management </h1>
 
   <div class="tabs">
-    <button class="tab" data-tab="patients">Patients</button>
-    <button class="tab active" data-tab="doctors">Doctors</button>
+    <button class="tab active" data-tab="patients">Patients</button>
+    <button class="tab" data-tab="doctors">Doctors</button>
     <button class="tab" data-tab="appointments">Appointments</button>
   </div>
 
   <!-- PATIENTS -->
-  <section class="panel" id="patients" hidden>
+  <section class="panel" id="patients">
     <div class="card">
       <h2>Add Patient</h2>
       <form id="patientForm" class="formRow">
@@ -19,10 +19,26 @@
         <button class="btn" type="submit">Add Patient</button>
       </form>
     </div>
+
+    <div class="card">
+      <h2>Patients</h2>
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Email</th>
+            <th>Phone</th>
+            <th>Date</th>
+            <th class="actionsCol">Actions</th>
+          </tr>
+        </thead>
+        <tbody id="patientsTbody"></tbody>
+      </table>
+    </div>
   </section>
 
   <!-- DOCTORS -->
-  <section class="panel" id="doctors">
+  <section class="panel" id="doctors" hidden>
     <div class="card">
       <h2>Add Doctor</h2>
 
@@ -35,10 +51,7 @@
     </div>
 
     <div class="card">
-      <div class="cardHead">
-        <h2>Doctors</h2>
-      </div>
-
+      <h2>Doctors</h2>
       <table class="table">
         <thead>
           <tr>
@@ -56,8 +69,38 @@
   <!-- APPOINTMENTS -->
   <section class="panel" id="appointments" hidden>
     <div class="card">
+      <h2>Add Appointment</h2>
+
+      <form id="appointmentForm" class="formRow">
+        <select id="apptPatient" name="patient" required>
+          <option value="" disabled selected>Select Patient</option>
+        </select>
+
+        <select id="apptDoctor" name="doctor" required>
+          <option value="" disabled selected>Select Doctor</option>
+        </select>
+
+        <input name="date" type="date" required />
+        <input name="time" type="time" required />
+        <input name="notes" placeholder="Notes (optional)" />
+        <button class="btn" type="submit">Add Appointment</button>
+      </form>
+    </div>
+
+    <div class="card">
       <h2>Appointments</h2>
-      <p class="muted">Next step: populate dropdowns from Patients & Doctors.</p>
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Patient</th>
+            <th>Doctor</th>
+            <th>Date/Time</th>
+            <th>Notes</th>
+            <th class="actionsCol">Actions</th>
+          </tr>
+        </thead>
+        <tbody id="appointmentsTbody"></tbody>
+      </table>
     </div>
   </section>
 </div>
