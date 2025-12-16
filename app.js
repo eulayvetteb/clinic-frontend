@@ -1,16 +1,33 @@
-console.log("APP JS LOADED (MATCHING YOUR HTML)");
+// ================== CONFIG ==================
+const API_BASE = "https://crud-clinic.onrender.com/api"; // ✅ change if needed
 
-// ✅ CHANGE THIS to your Render backend base
-const API_BASE = "https://crud-clinic.onrender.com/api";
+// ================== HELPERS ==================
+async function api(path, options = {}) {
+  const res = await fetch(`${API_BASE}${path}`, {
+    headers: { "Content-Type": "application/json", ...(options.headers || {}) },
+    ...options,
+  });
 
-// ------------------------------
-// Helpers
-// ------------------------------
-const qs = (sel) => document.querySelector(sel);
-const qsa = (sel) => Array.from(document.querySelectorAll(sel));
+  let data = null;
+  try {
+    data = await res.json();
+  } catch (e) {
+    // if backend returns no JSON
+  }
 
-function escapeHtml(s) {
-  return String(s ?? "")
+  if (!res.ok) {
+    const msg =
+      data?.message ||
+      data?.error ||
+      `Request failed (${res.status}) on ${path}`;
+    throw new Error(msg);
+  }
+
+  return data;
+}
+
+function escapeHtml(s = "") {
+  return String(s)
     .replaceAll("&", "&amp;")
     .replaceAll("<", "&lt;")
     .replaceAll(">", "&gt;")
@@ -18,341 +35,268 @@ function escapeHtml(s) {
     .replaceAll("'", "&#039;");
 }
 
-function fmtDate(iso) {
-  if (!iso) return "";
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return String(iso);
-  return d.toISOString().slice(0, 10);
-}
-
-function toast(msg) {
+function showError(err) {
+  const msg = err?.message || String(err);
+  // nicer later (toast), for now alert:
   alert(msg);
 }
 
-// Make ISO datetime from date + time
-function toISO(dateStr, timeStr) {
-  // dateStr: "2025-12-18", timeStr: "23:16"
-  if (!dateStr || !timeStr) return "";
-  const d = new Date(`${dateStr}T${timeStr}:00`);
-  if (Number.isNaN(d.getTime())) return "";
-  return d.toISOString();
-}
+// ================== TABS ==================
+const tabs = document.querySelectorAll(".tab");
+const panels = document.querySelectorAll(".panel");
 
-// Add minutes to ISO datetime
-function addMinutes(iso, minutes) {
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return "";
-  d.setMinutes(d.getMinutes() + minutes);
-  return d.toISOString();
-}
+tabs.forEach((btn) => {
+  btn.addEventListener("click", () => {
+    tabs.forEach((t) => t.classList.remove("active"));
+    btn.classList.add("active");
 
-async function api(path, options = {}) {
-  const url = `${API_BASE}${path}`;
-  const res = await fetch(url, {
-    headers: { "Content-Type": "application/json", ...(options.headers || {}) },
-    ...options,
+    const target = btn.dataset.tab;
+    panels.forEach((p) => (p.hidden = p.id !== target));
   });
+});
 
-  const ct = res.headers.get("content-type") || "";
-  const isJson = ct.includes("application/json");
-  const data = isJson
-    ? await res.json().catch(() => null)
-    : await res.text().catch(() => "");
+// ================== ELEMENTS ==================
+// Forms
+const patientForm = document.getElementById("patientForm");
+const doctorForm = document.getElementById("doctorForm");
+const appointmentForm = document.getElementById("appointmentForm");
 
-  if (!res.ok) {
-    const msg = isJson ? JSON.stringify(data) : String(data);
-    throw new Error(`${res.status} ${res.statusText} - ${msg}`);
-  }
-  return data;
-}
+// Tables
+const patientsTbody = document.getElementById("patientsTbody");
+const doctorsTbody = document.getElementById("doctorsTbody");
+const appointmentsTbody = document.getElementById("appointmentsTbody");
 
-// ------------------------------
-// Tabs (works even if backend fails)
-// ------------------------------
-function setActiveTab(tabName) {
-  qsa(".tabs .tab").forEach((b) => b.classList.remove("active"));
-  const btn = qsa(".tabs .tab").find((b) => b.dataset.tab === tabName);
-  if (btn) btn.classList.add("active");
+// Appointment selects
+const apptPatientSelect = document.getElementById("apptPatient");
+const apptDoctorSelect = document.getElementById("apptDoctor");
 
-  qsa(".panel").forEach((p) => p.classList.remove("show"));
-  const panel = qs(`#${tabName}`);
-  if (panel) panel.classList.add("show");
-}
+// ================== STATE ==================
+let patientsCache = [];
+let doctorsCache = [];
 
-function wireTabs() {
-  qsa(".tabs .tab").forEach((btn) => {
-    btn.addEventListener("click", (e) => {
-      e.preventDefault();
-      setActiveTab(btn.dataset.tab);
-    });
-  });
-  setActiveTab("patients");
-}
-
-// ------------------------------
-// DOM (your HTML ids)
-// ------------------------------
-// Patients
-const patientForm = qs("#patientForm");
-const pName = qs("#p_name");
-const pPhone = qs("#p_phone");
-const pEmail = qs("#p_email");
-const pBirth = qs("#p_birthDate");
-const patientsTbody = qs("#patientsTable tbody");
-
-// Doctors
-const doctorForm = qs("#doctorForm");
-const dName = qs("#d_name");
-const dSpec = qs("#d_specialty"); // UI label "Specialization", backend requires "specialty"
-const dPhone = qs("#d_phone");
-const doctorsTbody = qs("#doctorsTable tbody");
-
-// Appointments
-const apptForm = qs("#apptForm");
-const aPatient = qs("#a_patient");
-const aDoctor = qs("#a_doctor");
-const aDate = qs("#a_date");
-const aTime = qs("#a_time");
-const apptsTbody = qs("#apptsTable tbody");
-
-// ------------------------------
-// State
-// ------------------------------
-let patients = [];
-let doctors = [];
-let appts = [];
-
-// ------------------------------
-// Render
-// ------------------------------
-function renderPatients() {
+// ================== RENDERERS ==================
+function renderPatientsTable(list) {
   if (!patientsTbody) return;
-  patientsTbody.innerHTML = patients
-    .map((p) => {
-      const id = p._id || p.id;
-      return `
-        <tr>
-          <td>${escapeHtml(p.name)}</td>
-          <td>${escapeHtml(p.phone)}</td>
-          <td>${escapeHtml(p.email || "")}</td>
-          <td>${escapeHtml(fmtDate(p.birthDate))}</td>
-          <td>
-            <button class="btn-sm danger" data-del-patient="${escapeHtml(id)}">Delete</button>
-          </td>
-        </tr>
-      `;
-    })
-    .join("");
+  patientsTbody.innerHTML = "";
+
+  list.forEach((p) => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${escapeHtml(p.name)}</td>
+      <td>${escapeHtml(p.email)}</td>
+      <td>${escapeHtml(p.phone)}</td>
+      <td>${escapeHtml(p.dob || p.date || "")}</td>
+      <td class="actionsCol">
+        <button class="smallBtn danger" data-type="patient" data-id="${p._id}">Delete</button>
+      </td>
+    `;
+    patientsTbody.appendChild(tr);
+  });
 }
 
-function renderDoctors() {
+function renderDoctorsTable(list) {
   if (!doctorsTbody) return;
-  doctorsTbody.innerHTML = doctors
-    .map((d) => {
-      const id = d._id || d.id;
-      const spec = d.specialty || d.specialization || "";
-      return `
-        <tr>
-          <td>${escapeHtml(d.name)}</td>
-          <td>${escapeHtml(spec)}</td>
-          <td>${escapeHtml(d.phone || "")}</td>
-          <td>
-            <button class="btn-sm danger" data-del-doctor="${escapeHtml(id)}">Delete</button>
-          </td>
-        </tr>
-      `;
-    })
-    .join("");
+  doctorsTbody.innerHTML = "";
+
+  list.forEach((d) => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${escapeHtml(d.name)}</td>
+      <td>${escapeHtml(d.specialty || d.specialization || "")}</td>
+      <td>${escapeHtml(d.phone || "")}</td>
+      <td class="actionsCol">
+        <button class="smallBtn danger" data-type="doctor" data-id="${d._id}">Delete</button>
+      </td>
+    `;
+    doctorsTbody.appendChild(tr);
+  });
 }
 
-function refreshApptSelects() {
-  if (!aPatient || !aDoctor) return;
+function renderAppointmentsTable(list) {
+  if (!appointmentsTbody) return;
+  appointmentsTbody.innerHTML = "";
 
-  aPatient.innerHTML =
-    `<option value="">Select patient</option>` +
-    patients
-      .map((p) => {
-        const id = p._id || p.id;
-        return `<option value="${escapeHtml(id)}">${escapeHtml(p.name)}</option>`;
-      })
-      .join("");
+  list.forEach((a) => {
+    // backend might return populated patient/doctor objects OR ids
+    const patientName =
+      a.patient?.name ||
+      patientsCache.find((p) => p._id === a.patient)?.name ||
+      "";
+    const doctorName =
+      a.doctor?.name ||
+      doctorsCache.find((d) => d._id === a.doctor)?.name ||
+      "";
 
-  aDoctor.innerHTML =
-    `<option value="">Select doctor</option>` +
-    doctors
-      .map((d) => {
-        const id = d._id || d.id;
-        return `<option value="${escapeHtml(id)}">${escapeHtml(d.name)}</option>`;
-      })
-      .join("");
+    const when = [a.date || "", a.time || ""].filter(Boolean).join(" ");
+
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${escapeHtml(patientName)}</td>
+      <td>${escapeHtml(doctorName)}</td>
+      <td>${escapeHtml(when)}</td>
+      <td>${escapeHtml(a.notes || "")}</td>
+      <td class="actionsCol">
+        <button class="smallBtn danger" data-type="appointment" data-id="${a._id}">Delete</button>
+      </td>
+    `;
+    appointmentsTbody.appendChild(tr);
+  });
 }
 
-function nameById(list, id) {
-  if (!id) return "";
-  const found = list.find((x) => (x._id || x.id) === id);
-  return found?.name || "";
+function renderAppointmentDropdowns() {
+  if (!apptPatientSelect || !apptDoctorSelect) return;
+
+  apptPatientSelect.innerHTML = `<option value="" disabled selected>Select Patient</option>`;
+  patientsCache.forEach((p) => {
+    const opt = document.createElement("option");
+    opt.value = p._id;
+    opt.textContent = p.name;
+    apptPatientSelect.appendChild(opt);
+  });
+
+  apptDoctorSelect.innerHTML = `<option value="" disabled selected>Select Doctor</option>`;
+  doctorsCache.forEach((d) => {
+    const opt = document.createElement("option");
+    opt.value = d._id;
+    opt.textContent = d.name;
+    apptDoctorSelect.appendChild(opt);
+  });
 }
 
-function renderAppts() {
-  if (!apptsTbody) return;
-
-  apptsTbody.innerHTML = appts
-    .map((a) => {
-      const id = a._id || a.id;
-
-      // handle different shapes:
-      const patientId = a.patientId || a.patient || a.patient?._id || a.patient?.id;
-      const doctorId = a.doctorId || a.doctor || a.doctor?._id || a.doctor?.id;
-
-      // backend requires startAt/endAt, but maybe returns other names
-      const start = a.startAt || a.date || a.appointmentDate || a.scheduledAt;
-      const end = a.endAt || "";
-
-      const pNameStr = typeof a.patient === "object" ? a.patient?.name : nameById(patients, patientId) || patientId;
-      const dNameStr = typeof a.doctor === "object" ? a.doctor?.name : nameById(doctors, doctorId) || doctorId;
-
-      return `
-        <tr>
-          <td>${escapeHtml(pNameStr || "")}</td>
-          <td>${escapeHtml(dNameStr || "")}</td>
-          <td>${escapeHtml(fmtDate(start))}</td>
-          <td>${escapeHtml(start ? new Date(start).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "")}</td>
-          <td>
-            <button class="btn-sm danger" data-del-appt="${escapeHtml(id)}">Delete</button>
-          </td>
-        </tr>
-      `;
-    })
-    .join("");
+// ================== LOADERS ==================
+async function loadPatients() {
+  const data = await api("/patients");
+  patientsCache = Array.isArray(data) ? data : data?.patients || [];
+  renderPatientsTable(patientsCache);
+  renderAppointmentDropdowns();
 }
 
-// ------------------------------
-// Load
-// ------------------------------
-async function loadAll() {
-  try {
-    patients = await api("/patients");
-    doctors = await api("/doctors");
-    appts = await api("/appointments");
-
-    renderPatients();
-    renderDoctors();
-    refreshApptSelects();
-    renderAppts();
-  } catch (e) {
-    console.error(e);
-    toast("Backend connection failed. Check Render API + CORS.");
-  }
+async function loadDoctors() {
+  const data = await api("/doctors");
+  doctorsCache = Array.isArray(data) ? data : data?.doctors || [];
+  renderDoctorsTable(doctorsCache);
+  renderAppointmentDropdowns();
 }
 
-// ------------------------------
-// Submit handlers
-// ------------------------------
+async function loadAppointments() {
+  const data = await api("/appointments");
+  const list = Array.isArray(data) ? data : data?.appointments || [];
+  renderAppointmentsTable(list);
+}
+
+// ================== SUBMITS ==================
 patientForm?.addEventListener("submit", async (e) => {
   e.preventDefault();
-  try {
-    const payload = {
-      name: pName.value.trim(),
-      phone: pPhone.value.trim(),
-      email: pEmail.value.trim(),
-      birthDate: pBirth.value,
-    };
-    if (!payload.name || !payload.phone || !payload.email || !payload.birthDate) {
-      return toast("Fill out all patient fields.");
-    }
 
-    await api("/patients", { method: "POST", body: JSON.stringify(payload) });
-    await loadAll();
-    patientForm.reset();
+  const name = e.target.elements["name"]?.value.trim();
+  const dob = e.target.elements["dob"]?.value; // date input
+  const email = e.target.elements["email"]?.value.trim();
+  const phone = e.target.elements["phone"]?.value.trim();
+
+  try {
+    await api("/patients", {
+      method: "POST",
+      body: JSON.stringify({ name, dob, email, phone }),
+    });
+
+    e.target.reset();
+    await loadPatients();
   } catch (err) {
-    console.error(err);
-    toast(err.message || "Error creating patient");
+    // handle duplicate email nicely
+    if (String(err.message).includes("E11000") || String(err.message).toLowerCase().includes("duplicate")) {
+      alert("Email already exists. Please use a different email.");
+      return;
+    }
+    showError(err);
   }
 });
 
 doctorForm?.addEventListener("submit", async (e) => {
   e.preventDefault();
-  try {
-    // ✅ backend expects "specialty"
-    const payload = {
-      name: dName.value.trim(),
-      specialty: dSpec.value.trim(),
-      phone: dPhone.value.trim(),
-    };
-    if (!payload.name || !payload.specialty || !payload.phone) {
-      return toast("Fill out all doctor fields.");
-    }
 
-    await api("/doctors", { method: "POST", body: JSON.stringify(payload) });
-    await loadAll();
-    doctorForm.reset();
+  const name = e.target.elements["name"]?.value.trim();
+  const specialization = e.target.elements["specialization"]?.value.trim();
+  const phone = e.target.elements["phone"]?.value.trim();
+
+  try {
+    // ✅ IMPORTANT: backend expects "specialty"
+    await api("/doctors", {
+      method: "POST",
+      body: JSON.stringify({ name, specialty: specialization, phone }),
+    });
+
+    e.target.reset();
+    await loadDoctors();
   } catch (err) {
-    console.error(err);
-    toast(err.message || "Error creating doctor");
+    showError(err);
   }
 });
 
-apptForm?.addEventListener("submit", async (e) => {
+appointmentForm?.addEventListener("submit", async (e) => {
   e.preventDefault();
+
+  const patient = e.target.elements["patient"]?.value;
+  const doctor = e.target.elements["doctor"]?.value;
+  const date = e.target.elements["date"]?.value;
+  const time = e.target.elements["time"]?.value;
+  const notes = e.target.elements["notes"]?.value?.trim() || "";
+
+  if (!patient || !doctor) {
+    alert("Please select patient and doctor.");
+    return;
+  }
+
   try {
-    const patientId = aPatient.value;
-    const doctorId = aDoctor.value;
-    const date = aDate.value;
-    const time = aTime.value;
+    await api("/appointments", {
+      method: "POST",
+      body: JSON.stringify({ patient, doctor, date, time, notes }),
+    });
 
-    if (!patientId || !doctorId || !date || !time) {
-      return toast("Fill out all appointment fields.");
-    }
-
-    // ✅ backend expects startAt and endAt
-    const startAt = toISO(date, time);
-    if (!startAt) return toast("Invalid date/time.");
-
-    // Default duration: 30 mins
-    const endAt = addMinutes(startAt, 30);
-
-    const payload = { patientId, doctorId, startAt, endAt };
-
-    await api("/appointments", { method: "POST", body: JSON.stringify(payload) });
-    await loadAll();
-    apptForm.reset();
+    e.target.reset();
+    await loadAppointments();
   } catch (err) {
-    console.error(err);
-    toast(err.message || "Error creating appointment");
+    showError(err);
   }
 });
 
-// ------------------------------
-// Delete handlers
-// ------------------------------
+// ================== DELETE (optional if your backend supports it) ==================
 document.addEventListener("click", async (e) => {
-  const btn = e.target.closest("button");
+  const btn = e.target.closest("button[data-type][data-id]");
   if (!btn) return;
 
+  const type = btn.dataset.type;
+  const id = btn.dataset.id;
+
+  const ok = confirm(`Delete this ${type}?`);
+  if (!ok) return;
+
   try {
-    if (btn.dataset.delPatient) {
-      if (!confirm("Delete patient?")) return;
-      await api(`/patients/${btn.dataset.delPatient}`, { method: "DELETE" });
-      await loadAll();
+    if (type === "patient") {
+      await api(`/patients/${id}`, { method: "DELETE" });
+      await loadPatients();
+      await loadAppointments(); // appointments might reference patient
     }
-    if (btn.dataset.delDoctor) {
-      if (!confirm("Delete doctor?")) return;
-      await api(`/doctors/${btn.dataset.delDoctor}`, { method: "DELETE" });
-      await loadAll();
+    if (type === "doctor") {
+      await api(`/doctors/${id}`, { method: "DELETE" });
+      await loadDoctors();
+      await loadAppointments();
     }
-    if (btn.dataset.delAppt) {
-      if (!confirm("Delete appointment?")) return;
-      await api(`/appointments/${btn.dataset.delAppt}`, { method: "DELETE" });
-      await loadAll();
+    if (type === "appointment") {
+      await api(`/appointments/${id}`, { method: "DELETE" });
+      await loadAppointments();
     }
   } catch (err) {
-    console.error(err);
-    toast(err.message || "Delete failed");
+    showError(err);
   }
 });
 
-// ------------------------------
-// Start
-// ------------------------------
-wireTabs();
-loadAll();
+// ================== INIT ==================
+(async function init() {
+  try {
+    await loadPatients();
+    await loadDoctors();
+    await loadAppointments();
+  } catch (err) {
+    showError(err);
+  }
+})();
