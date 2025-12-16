@@ -1,30 +1,63 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <title>Clinic System</title>
-  <link rel="stylesheet" href="style.css" />
-</head>
-<body>
+<div class="page">
+  <h1 class="title">Clinic Management System</h1>
 
-  <h1>Clinic System</h1>
+  <div class="tabs">
+    <button class="tab" data-tab="patients">Patients</button>
+    <button class="tab active" data-tab="doctors">Doctors</button>
+    <button class="tab" data-tab="appointments">Appointments</button>
+  </div>
 
-  <section>
-    <h2>Add Patient</h2>
-    <form id="patientForm">
-      <input type="text" id="name" placeholder="Name" required />
-      <input type="text" id="phone" placeholder="Phone" required />
-      <input type="email" id="email" placeholder="Email" required />
-      <input type="date" id="birthDate" required />
-      <button type="submit">Add Patient</button>
-    </form>
+  <!-- PATIENTS -->
+  <section class="panel" id="patients" hidden>
+    <div class="card">
+      <h2>Add Patient</h2>
+      <form id="patientForm" class="formRow">
+        <input name="name" placeholder="Name" required />
+        <input name="dob" type="date" required />
+        <input name="email" type="email" placeholder="Email" required />
+        <input name="phone" placeholder="Phone" required />
+        <button class="btn" type="submit">Add Patient</button>
+      </form>
+    </div>
   </section>
 
-  <section>
-    <h2>Patients</h2>
-    <ul id="patientList"></ul>
+  <!-- DOCTORS -->
+  <section class="panel" id="doctors">
+    <div class="card">
+      <h2>Add Doctor</h2>
+
+      <form id="doctorForm" class="formRow">
+        <input name="name" placeholder="Dr. Maria Santos" required />
+        <input name="specialization" placeholder="General surgeon" required />
+        <input name="phone" placeholder="0942..." required />
+        <button class="btn" type="submit">Add Doctor</button>
+      </form>
+    </div>
+
+    <div class="card">
+      <div class="cardHead">
+        <h2>Doctors</h2>
+      </div>
+
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Specialization</th>
+            <th>Phone</th>
+            <th class="actionsCol">Actions</th>
+          </tr>
+        </thead>
+        <tbody id="doctorsTbody"></tbody>
+      </table>
+    </div>
   </section>
 
-  <script src="app.js"></script>
-</body>
-</html>
+  <!-- APPOINTMENTS -->
+  <section class="panel" id="appointments" hidden>
+    <div class="card">
+      <h2>Appointments</h2>
+      <p class="muted">Next step: populate dropdowns from Patients & Doctors.</p>
+    </div>
+  </section>
+</div>
