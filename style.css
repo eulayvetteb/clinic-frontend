@@ -1,112 +1,115 @@
-/* ===============================
-   GLOBAL
-================================ */
-* {
-  box-sizing: border-box;
-  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+* { box-sizing: border-box; font-family: system-ui, Arial, sans-serif; }
+
+body{
+  margin:0;
+  min-height:100vh;
+  background: linear-gradient(180deg, #eef6ff 0%, #f7fbff 55%, #eef6ff 100%);
+  color:#0b2540;
 }
 
-body {
-  margin: 0;
-  min-height: 100vh;
-  background: linear-gradient(135deg, #eaf4ff, #f7fbff);
-  display: flex;
-  justify-content: center;
-  align-items: flex-start;
+.page{ max-width: 1100px; margin: 0 auto; padding: 28px 18px 60px; }
+
+.title{
+  text-align:center;
+  font-size: 44px;
+  font-weight: 900;
+  letter-spacing: .3px;
+  margin: 10px 0 22px;
+  color:#0b3a66;
 }
 
-/* ===============================
-   APP CONTAINER
-================================ */
-.app {
-  width: 100%;
-  max-width: 900px;
-  padding: 40px 20px;
+.tabs{
+  display:flex;
+  justify-content:center;
+  gap: 14px;
+  margin-bottom: 22px;
 }
 
-/* ===============================
-   HEADER
-================================ */
-h1 {
-  text-align: center;
-  color: #0b3c6f;
-  margin-bottom: 30px;
+.tab{
+  border: 1px solid #cfe2ff;
+  background:#fff;
+  color:#2a5f90;
+  padding: 10px 22px;
+  border-radius: 999px;
+  cursor:pointer;
+  box-shadow: 0 6px 18px rgba(10, 30, 60, .08);
 }
 
-/* ===============================
-   CARD
-================================ */
-.card {
-  background: #ffffff;
-  border-radius: 16px;
-  padding: 25px;
-  margin-bottom: 30px;
-  box-shadow: 0 15px 40px rgba(0, 80, 160, 0.12);
+.tab.active{
+  background: #2f80ff;
+  color:#fff;
+  border-color:#2f80ff;
+  box-shadow: 0 14px 30px rgba(47,128,255,.25);
 }
 
-/* ===============================
-   FORMS
-================================ */
-.form input {
-  width: 100%;
-  padding: 12px 14px;
-  margin-bottom: 14px;
-  border-radius: 8px;
-  border: 1px solid #ccdfff;
-  font-size: 14px;
+.card{
+  background:#fff;
+  border-radius: 18px;
+  padding: 22px;
+  box-shadow: 0 16px 40px rgba(10, 30, 60, .12);
+  margin: 18px 0;
 }
 
-.form input:focus {
+.card h2{ margin:0 0 14px; font-size: 22px; font-weight: 900; }
+
+.formRow{
+  display:grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 14px;
+  align-items:center;
+}
+
+.formRow input{
+  height: 40px;
+  border: 1px solid #d7e6ff;
+  border-radius: 12px;
+  padding: 10px 12px;
   outline: none;
-  border-color: #2f80ff;
+  background:#f3f7ff;
 }
 
-/* ===============================
-   BUTTON
-================================ */
-button {
-  width: 100%;
-  padding: 14px;
-  background: linear-gradient(135deg, #2f80ff, #4da3ff);
-  color: #fff;
-  border: none;
-  border-radius: 10px;
-  font-size: 15px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: transform 0.2s, box-shadow 0.2s;
+.formRow input:focus{
+  border-color:#2f80ff;
+  box-shadow: 0 0 0 4px rgba(47,128,255,.15);
+  background:#fff;
 }
 
-button:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 8px 20px rgba(47, 128, 255, 0.4);
+.btn{
+  grid-column: 1 / -1;
+  height: 46px;
+  border:0;
+  border-radius: 12px;
+  background:#2f80ff;
+  color:#fff;
+  font-weight: 900;
+  cursor:pointer;
+  box-shadow: 0 14px 30px rgba(47,128,255,.22);
 }
 
-/* ===============================
-   TABLE
-================================ */
-table {
-  width: 100%;
+.btn:hover{ filter: brightness(1.03); }
+
+.table{
+  width:100%;
   border-collapse: collapse;
 }
 
-th {
-  text-align: left;
-  padding: 10px;
-  color: #0b3c6f;
-  border-bottom: 2px solid #e3efff;
+.table th, .table td{
+  padding: 14px 10px;
+  border-bottom: 1px solid #e7f0ff;
+  text-align:left;
 }
 
-td {
-  padding: 10px;
-  border-bottom: 1px solid #eef5ff;
+.table th{
+  color:#0b3a66;
+  font-size: 13px;
+  letter-spacing:.2px;
 }
 
-/* ===============================
-   MOBILE
-================================ */
-@media (max-width: 600px) {
-  .app {
-    padding: 20px 10px;
-  }
+.actionsCol{ width: 140px; }
+
+.muted{ color:#5b7ea5; margin: 0; }
+
+@media (max-width: 900px){
+  .formRow{ grid-template-columns: 1fr; }
+  .title{ font-size: 34px; }
 }
