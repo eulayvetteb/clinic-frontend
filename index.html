@@ -1,5 +1,17 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Clinic Management System</title>
+
+  <link rel="stylesheet" href="./style.css" />
+  <link rel="icon" href="data:," />
+</head>
+<body>
+
 <div class="page">
-  <h1 class="title">Clinic Management </h1>
+  <h1 class="title">Clinic Management System</h1>
 
   <div class="tabs">
     <button class="tab active" data-tab="patients">Patients</button>
@@ -16,7 +28,7 @@
         <input name="dob" type="date" required />
         <input name="email" type="email" placeholder="Email" required />
         <input name="phone" placeholder="Phone" required />
-        <button class="btn" type="submit">Add Patient</button>
+        <button class="btn">Add Patient</button>
       </form>
     </div>
 
@@ -25,11 +37,7 @@
       <table class="table">
         <thead>
           <tr>
-            <th>Name</th>
-            <th>Email</th>
-            <th>Phone</th>
-            <th>Date</th>
-            <th class="actionsCol">Actions</th>
+            <th>Name</th><th>Email</th><th>Phone</th><th>Date</th>
           </tr>
         </thead>
         <tbody id="patientsTbody"></tbody>
@@ -41,12 +49,11 @@
   <section class="panel" id="doctors" hidden>
     <div class="card">
       <h2>Add Doctor</h2>
-
       <form id="doctorForm" class="formRow">
         <input name="name" placeholder="Dr. Maria Santos" required />
         <input name="specialization" placeholder="General surgeon" required />
         <input name="phone" placeholder="0942..." required />
-        <button class="btn" type="submit">Add Doctor</button>
+        <button class="btn">Add Doctor</button>
       </form>
     </div>
 
@@ -55,10 +62,7 @@
       <table class="table">
         <thead>
           <tr>
-            <th>Name</th>
-            <th>Specialization</th>
-            <th>Phone</th>
-            <th class="actionsCol">Actions</th>
+            <th>Name</th><th>Specialization</th><th>Phone</th>
           </tr>
         </thead>
         <tbody id="doctorsTbody"></tbody>
@@ -70,20 +74,17 @@
   <section class="panel" id="appointments" hidden>
     <div class="card">
       <h2>Add Appointment</h2>
-
       <form id="appointmentForm" class="formRow">
         <select id="apptPatient" name="patient" required>
           <option value="" disabled selected>Select Patient</option>
         </select>
-
         <select id="apptDoctor" name="doctor" required>
           <option value="" disabled selected>Select Doctor</option>
         </select>
-
         <input name="date" type="date" required />
         <input name="time" type="time" required />
-        <input name="notes" placeholder="Notes (optional)" />
-        <button class="btn" type="submit">Add Appointment</button>
+        <input name="notes" placeholder="Notes" />
+        <button class="btn">Add Appointment</button>
       </form>
     </div>
 
@@ -92,11 +93,7 @@
       <table class="table">
         <thead>
           <tr>
-            <th>Patient</th>
-            <th>Doctor</th>
-            <th>Date/Time</th>
-            <th>Notes</th>
-            <th class="actionsCol">Actions</th>
+            <th>Patient</th><th>Doctor</th><th>Date/Time</th><th>Notes</th>
           </tr>
         </thead>
         <tbody id="appointmentsTbody"></tbody>
@@ -104,3 +101,7 @@
     </div>
   </section>
 </div>
+
+<script src="./app.js" defer></script>
+</body>
+</html>
