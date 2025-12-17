@@ -1,4 +1,8 @@
-* { box-sizing: border-box; margin:0; padding:0; }
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
 
 body{
   font-family: "Segoe UI", sans-serif;
@@ -6,7 +10,12 @@ body{
   color:#1f2937;
 }
 
-.page{ max-width:1100px; margin:auto; padding:20px; }
+/* ================= PAGE ================= */
+.page{
+  max-width:1100px;
+  margin:auto;
+  padding:20px;
+}
 
 .title{
   text-align:center;
@@ -16,6 +25,7 @@ body{
   margin:30px 0 20px;
 }
 
+/* ================= TABS ================= */
 .tabs{
   display:flex;
   justify-content:center;
@@ -30,6 +40,11 @@ body{
   background:#fff;
   color:#1e5fa3;
   cursor:pointer;
+  transition:.2s;
+}
+
+.tab:hover{
+  background:#eef6ff;
 }
 
 .tab.active{
@@ -39,8 +54,12 @@ body{
   box-shadow:0 6px 16px rgba(43,124,255,.3);
 }
 
-.panel[hidden]{ display:none; }
+/* ================= PANELS ================= */
+.panel[hidden]{
+  display:none;
+}
 
+/* ================= CARDS ================= */
 .card{
   background:#fff;
   border-radius:20px;
@@ -49,20 +68,34 @@ body{
   box-shadow:0 20px 40px rgba(0,123,255,.1);
 }
 
-.card h2{ margin-bottom:14px; color:#0b3c6d; }
+.card h2{
+  margin-bottom:14px;
+  color:#0b3c6d;
+}
 
+/* ================= FORMS ================= */
 .formRow{
   display:grid;
   grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
   gap:14px;
 }
 
-input, select{
+input,
+select{
   padding:12px 14px;
   border-radius:14px;
   border:1px solid #d6e6ff;
+  font-size:14px;
 }
 
+input:focus,
+select:focus{
+  outline:none;
+  border-color:#4da3ff;
+  box-shadow:0 0 0 2px rgba(77,163,255,.2);
+}
+
+/* ================= BUTTONS ================= */
 .btn{
   grid-column:1/-1;
   padding:13px;
@@ -72,14 +105,54 @@ input, select{
   color:#fff;
   font-weight:600;
   cursor:pointer;
+  transition:.2s;
 }
 
+.btn:hover{
+  filter:brightness(1.05);
+}
+
+/* DELETE BUTTON */
+.delBtn{
+  padding:8px 14px;
+  border:none;
+  border-radius:10px;
+  cursor:pointer;
+  background:#ff4d4f;
+  color:#fff;
+  font-weight:600;
+  font-size:13px;
+}
+
+.delBtn:hover{
+  background:#e63e3e;
+}
+
+/* ================= TABLES ================= */
 .table{
   width:100%;
   border-collapse:collapse;
 }
 
-.table th, .table td{
+.table th,
+.table td{
   padding:10px;
   border-bottom:1px solid #eef4ff;
+  text-align:left;
+}
+
+.table th{
+  color:#1e5fa3;
+  font-weight:600;
+}
+
+.table tr:hover{
+  background:#f5faff;
+}
+
+/* ACTION COLUMN */
+.table th:last-child,
+.table td:last-child{
+  width:110px;
+  text-align:center;
 }
