@@ -22,6 +22,16 @@ const esc = (s="") => String(s)
   .replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;")
   .replaceAll('"',"&quot;").replaceAll("'","&#039;");
 
+function formatDateTimeFromStartEnd(startAt, endAt) {
+  if (!startAt) return "";
+  const s = new Date(startAt);
+  const e = endAt ? new Date(endAt) : null;
+
+  const startStr = s.toLocaleString();
+  const endStr = e ? e.toLocaleTimeString() : "";
+  return endStr ? `${startStr} - ${endStr}` : startStr;
+}
+
 /* =======================
    PATIENTS
 ======================= */
@@ -158,23 +168,45 @@ $("doctorForm").addEventListener("submit", async e => {
 });
 
 /* =======================
-   APPOINTMENTS
+   APPOINTMENTS (UPDATED)
 ======================= */
 async function loadAppointments() {
   const res = await fetch(`${API}/appointments`);
   const list = await res.json();
 
-  $("appointmentsTbody").innerHTML = list.map(a => `
-    <tr>
-      <td>${esc(a.patient?.name || "")}</td>
-      <td>${esc(a.doctor?.name || "")}</td>
-      <td>${esc(a.date || "")} ${esc(a.time || "")}</td>
-      <td>${esc(a.notes || "")}</td>
-      <td>
-        <button class="delBtn" data-type="appointment" data-id="${a._id}">Delete</button>
-      </td>
-    </tr>
-  `).join("");
+  $("appointmentsTbody").innerHTML = list.map(a => {
+    // Support multiple backend shapes:
+    // populated: a.patientId.name / a.doctorId.name OR a.patient.name / a.doctor.name
+    // non-populated: a.patientId (string) / a.doctorId (string)
+    const patientName =
+      a.patient?.name ||
+      a.patientId?.name ||
+      (typeof a.patientId === "string" ? a.patientId : "") ||
+      "";
+
+    const doctorName =
+      a.doctor?.name ||
+      a.doctorId?.name ||
+      (typeof a.doctorId === "string" ? a.doctorId : "") ||
+      "";
+
+    const when =
+      a.startAt
+        ? formatDateTimeFromStartEnd(a.startAt, a.endAt)
+        : `${esc(a.date || "")} ${esc(a.time || "")}`.trim();
+
+    return `
+      <tr>
+        <td>${esc(patientName)}</td>
+        <td>${esc(doctorName)}</td>
+        <td>${esc(when)}</td>
+        <td>${esc(a.notes || "")}</td>
+        <td>
+          <button class="delBtn" data-type="appointment" data-id="${a._id}">Delete</button>
+        </td>
+      </tr>
+    `;
+  }).join("");
 }
 
 $("appointmentForm").addEventListener("submit", async e => {
@@ -186,14 +218,23 @@ $("appointmentForm").addEventListener("submit", async e => {
     return;
   }
 
+  // Build startAt/endAt from date + time
+  const date = f.date.value; // yyyy-mm-dd
+  const time = f.time.value; // HH:MM
+  const startLocal = new Date(`${date}T${time}`);
+  const startAt = startLocal.toISOString();
+
+  // Default duration: 30 minutes
+  const endAt = new Date(startLocal.getTime() + 30 * 60 * 1000).toISOString();
+
   const res = await fetch(`${API}/appointments`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      patient: f.patient.value,
-      doctor: f.doctor.value,
-      date: f.date.value,
-      time: f.time.value,
+      patientId: f.patient.value,
+      doctorId: f.doctor.value,
+      startAt,
+      endAt,
       notes: f.notes.value.trim()
     })
   });
